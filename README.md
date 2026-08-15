@@ -74,3 +74,7 @@ class SiteMySite:
 
 `sites` 里的键是域名片段，命中后直接按 `card` 这个 CSS 选择器抽卡片，
 `title` / `poster` 支持 `img@alt`（属性）或 `.title`（元素文本）写法，多个用 `|` 分隔取第一个有值的。
+
+## 如何发布更新
+
+适配器文件 + manifest.json 的发布/更新/验证完整流程见 **[PUBLISH-GUIDE.md](PUBLISH-GUIDE.md)**（修改适配器、新增站点、删适配器、常见坑、核对清单都有）。
