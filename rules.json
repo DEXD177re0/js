@@ -1,0 +1,59 @@
+{
+  "_comment": "通用适配规则。可删除本文件恢复默认；修改后点界面「重新加载适配器」生效。",
+  "skip_path_words": [
+    "/login",
+    "/register",
+    "/signin",
+    "/signup",
+    "/logout",
+    "/search",
+    "/tags",
+    "/tag/",
+    "/category",
+    "/feed",
+    "/rss",
+    "/previews",
+    "/rankings",
+    "/profile",
+    "/pornstar",
+    "/categories",
+    "/channel",
+    "/model",
+    "/blog",
+    "/help",
+    "/member",
+    "/browse",
+    "/user"
+  ],
+  "skip_host_re": "facebook|instagram|google|bing|baidu|360\\.com|so\\.com|w3\\.org|schema\\.org|example\\.com|help\\.|support\\.",
+  "detail_hint_extra": [],
+  "poster_attrs": [
+    "data-src",
+    "data-original",
+    "data-lazy-src",
+    "data-echo",
+    "data-poster",
+    "data-thumb",
+    "data-background-image",
+    "data-bg",
+    "data-srcset",
+    "src"
+  ],
+  "direct_attrs": [
+    "data-url",
+    "data-video",
+    "data-src",
+    "data-href",
+    "data-mp4",
+    "data-file",
+    "data-hls",
+    "data-source"
+  ],
+  "sites": {
+    "_example": {
+      "card": "a[href*='/video-']",
+      "title": "img@alt",
+      "poster": "img@src"
+    }
+  }
+}
