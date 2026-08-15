@@ -1,11 +1,11 @@
 {
-  "repo_version": 1,
+  "repo_version": 2,
   "adapters": [
     {
       "id": "18mh",
       "file": "site_18mh.py",
       "version": "1.0.0",
-      "sha256": "50bcbdcaa7e73abf382c2d43b964e6c6bff20d55728529a7c65869f83ec21b09"
+      "sha256": "e75725c1a42dee04b22ec02344da8a8533cc5688c3ba452f409fef1953fbba08"
     },
     {
       "id": "91porna",
@@ -17,13 +17,13 @@
       "id": "generic",
       "file": "site_generic.py",
       "version": "1.0.0",
-      "sha256": "51b002f883f83242e07f91de34a4d633f02242d3fdc67d6599500fedb5fb0829"
+      "sha256": "9917d5f845791400a42e38db549cd8df94daf541717e48333b6533278bc55678"
     },
     {
       "id": "rules",
       "file": "rules.json",
       "version": "1.0.0",
-      "sha256": "0fd0f007b585437b80d13d838a752e1f9955802832ab10269a872a6ed58aca20"
+      "sha256": "82bc513e534b781e4be73146d8f45b2409930ef00f4bc015c0e9525d1058b232"
     }
   ]
 }
