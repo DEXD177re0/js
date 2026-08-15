@@ -2,17 +2,15 @@
 
 这里放「站点适配器插件」和「通用适配规则」，改完在网页里点「🧩 适配器管理 → 重新加载适配器」即可生效，**不需要重启服务、不需要重新打包**。
 
-- `site_91porna.py`：91porna 专用适配器（默认自带）
-- `site_18mh.py`：18mh（禁漫天堂）专用适配器（默认自带）
 - `site_generic.py`：通用兜底适配器（默认自带，**不要删除**，所有网站的兜底靠它）
 - `site_xxx.py`：其它站点适配器插件（按需新建）
 - `rules.json`：通用适配器的启发式规则（可选，默认用代码内置值）
 
-所有适配器（包括默认这些）都是这里的外部文件，改完会自动热重载（也可手动点「重新加载适配器」）。
+所有适配器都是这里的外部文件，改完会自动热重载（也可手动点「重新加载适配器」）。
 
 ## 添加一个站点插件
 
-新建 `site_你的网站.py`，实现下面 4 个方法即可（接口和内置适配器完全一样）：
+新建 `site_你的网站.py`，实现下面 4 个方法即可（接口和现有适配器完全一样）：
 
 ```python
 from urllib.parse import urljoin, urlparse
@@ -21,7 +19,7 @@ from app.models import VideoCard, VideoSource
 
 
 class SiteMySite:
-    name = "mysite"                       # 唯一名称，同名会覆盖内置
+    name = "mysite"                       # 唯一名称，同名会覆盖现有适配器
 
     def match(self, url: str) -> bool:
         return urlparse(url).netloc.endswith("mysite.com")
