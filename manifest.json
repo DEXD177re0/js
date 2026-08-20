@@ -4,8 +4,8 @@
     {
       "id": "bilibili",
       "file": "site_bilibili.py",
-      "version": "1.0.1",
-      "sha256": "3b0b3ca1066cfbe39cfc723486de12813d64eb4e3e97c0623b2d2fe9763aef4c"
+      "version": "1.0.2",
+      "sha256": "aacb0ee86637bb8a3ebcb07911dac135c660396ab65448808806aec09e67c572"
     },
     {
       "id": "18mh",

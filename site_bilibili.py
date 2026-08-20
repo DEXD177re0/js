@@ -1,8 +1,8 @@
 """bilibili（哔哩哔哩）专用站点适配器。
 
 链路：视频页/列表页 -> 提取视频卡片（BV 链接）
-     -> 视频页 __INITIAL_STATE__ 取 aid/cid -> wbi 签名 playurl API
-     -> durl 单文件 mp4（含音视频，未登录最高 360p）
+     -> view API 取 aid/cid（脚本请求拿不到页面播放数据）
+     -> wbi 签名 playurl API -> durl 单文件 mp4（含音视频，未登录最高 360p）
 
 与 generic 的关系：本适配器 match 命中 bilibili 域名时优先使用。
 generic 的 yt-dlp 虽能识别 bilibili，但返回 dash 分离流（音视频分开），
@@ -36,10 +36,6 @@ _MIXIN_KEY_ENC_TAB = [
 ]
 _QUALITY_MAP = {16: "360p", 32: "480p", 64: "720p", 80: "1080p", 112: "1080p+", 116: "1080p60"}
 _BV_RE = re.compile(r"/video/(BV[0-9A-Za-z]+)")
-_INITIAL_STATE_RE = re.compile(
-    r"window\.__INITIAL_STATE__\s*=\s*(\{.*?\})\s*</script>", re.S,
-)
-
 _wbi_keys = {"img": None, "sub": None, "at": 0.0}
 
 
@@ -86,7 +82,6 @@ class SiteBilibili:
         try:
             return self.resolve_video(VideoCard(title="", url=url, kind="video"))
         except Exception as e:
-            print("[bili] single_source 失败:", url, repr(e), flush=True)
             log.info("bilibili single_source 失败 %s: %s", url, e)
             return None
 
@@ -99,28 +94,18 @@ class SiteBilibili:
             return None
         bvid = m.group(1)
 
-        print("[bili] fetch 视频页开始", flush=True)
-        html = fetch_text(url, headers={"Referer": REFERER})
-        print("[bili] 视频页大小:", len(html), flush=True)
-        aid, cid = None, None
-        im = _INITIAL_STATE_RE.search(html)
-        print("[bili] INITIAL_STATE 提取:", "成功" if im else "失败", flush=True)
-        if im:
-            try:
-                state = json.loads(im.group(1))
-                vd = state.get("videoData") or {}
-                aid = vd.get("aid")
-                cid = vd.get("cid")
-                title = title or vd.get("title") or ""
-            except Exception as e:  # noqa: BLE001
-                log.info("bilibili INITIAL_STATE 解析失败 %s: %s", url, e)
-        print("[bili] aid/cid:", aid, cid, flush=True)
+        # B 站对脚本请求（urllib）返回无播放数据的降级页，不解析页面；
+        # 用 view API 拿 aid/cid/标题（无需登录）
+        view = json.loads(fetch_text(
+            "https://api.bilibili.com/x/web-interface/view?bvid=" + bvid,
+            headers={"Referer": REFERER},
+        ))
+        vd = (view.get("data") or {})
+        cid = vd.get("cid")
         if not cid:
-            # 页面未内嵌时退化为仅标题
-            tm = re.search(r"<title>(.*?)</title>", html, re.S)
-            if tm:
-                title = title or tm.group(1).strip()
             return None
+        aid = vd.get("aid")
+        title = title or vd.get("title") or ""
 
         img_key, sub_key = self._wbi_keys()
         params = _enc_wbi(
@@ -128,9 +113,7 @@ class SiteBilibili:
             img_key, sub_key,
         )
         api = "https://api.bilibili.com/x/player/playurl?" + urlencode(params)
-        print("[bili] playurl 请求", flush=True)
         result = json.loads(fetch_text(api, headers={"Referer": REFERER}))
-        print("[bili] playurl code:", result.get("code"), result.get("message"), flush=True)
         data = result.get("data") or {}
         durl = data.get("durl") or []
         if not durl:
