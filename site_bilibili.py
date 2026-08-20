@@ -86,6 +86,7 @@ class SiteBilibili:
         try:
             return self.resolve_video(VideoCard(title="", url=url, kind="video"))
         except Exception as e:
+            print("[bili] single_source 失败:", url, repr(e), flush=True)
             log.info("bilibili single_source 失败 %s: %s", url, e)
             return None
 
@@ -98,9 +99,12 @@ class SiteBilibili:
             return None
         bvid = m.group(1)
 
+        print("[bili] fetch 视频页开始", flush=True)
         html = fetch_text(url, headers={"Referer": REFERER})
+        print("[bili] 视频页大小:", len(html), flush=True)
         aid, cid = None, None
         im = _INITIAL_STATE_RE.search(html)
+        print("[bili] INITIAL_STATE 提取:", "成功" if im else "失败", flush=True)
         if im:
             try:
                 state = json.loads(im.group(1))
@@ -110,6 +114,7 @@ class SiteBilibili:
                 title = title or vd.get("title") or ""
             except Exception as e:  # noqa: BLE001
                 log.info("bilibili INITIAL_STATE 解析失败 %s: %s", url, e)
+        print("[bili] aid/cid:", aid, cid, flush=True)
         if not cid:
             # 页面未内嵌时退化为仅标题
             tm = re.search(r"<title>(.*?)</title>", html, re.S)
@@ -123,7 +128,9 @@ class SiteBilibili:
             img_key, sub_key,
         )
         api = "https://api.bilibili.com/x/player/playurl?" + urlencode(params)
+        print("[bili] playurl 请求", flush=True)
         result = json.loads(fetch_text(api, headers={"Referer": REFERER}))
+        print("[bili] playurl code:", result.get("code"), result.get("message"), flush=True)
         data = result.get("data") or {}
         durl = data.get("durl") or []
         if not durl:
