@@ -2,6 +2,12 @@
   "repo_version": 2,
   "adapters": [
     {
+      "id": "bilibili",
+      "file": "site_bilibili.py",
+      "version": "1.0.0",
+      "sha256": "4d39b0ad49444c002d8394758373d0acd984b824cbe133a3ccbafa350221dc11"
+    },
+    {
       "id": "18mh",
       "file": "site_18mh.py",
       "version": "1.0.0",
