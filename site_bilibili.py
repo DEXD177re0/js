@@ -112,7 +112,7 @@ class SiteBilibili:
             {"bvid": bvid, "cid": cid, "qn": 32, "fnval": 0, "fnver": 0, "fourk": 1},
             img_key, sub_key,
         )
-        api = "https://api.bilibili.com/x/player/playurl?" + urlencode(params)
+        api = "https://api.bilibili.com/x/player/wbi/playurl?" + urlencode(params)
         result = json.loads(fetch_text(api, headers={"Referer": REFERER}))
         data = result.get("data") or {}
         durl = data.get("durl") or []
@@ -123,12 +123,15 @@ class SiteBilibili:
         if not stream_url:
             return None
         qn = data.get("quality") or 0
+        note = "bilibili 官方单文件源"
+        if len(durl) > 1:
+            note += "（多段源，仅下载第一段）"
         return VideoSource(
             url=stream_url,
             title=title,
             protocol="http",
             headers={"Referer": REFERER, "User-Agent": UA},
-            note="bilibili 官方单文件源",
+            note=note,
             quality=_QUALITY_MAP.get(qn, f"{qn}p"),
         )
 
@@ -136,7 +139,8 @@ class SiteBilibili:
     def _wbi_keys():
         """获取 wbi 签名密钥（nav 接口，缓存 1 小时）。"""
         now = time.time()
-        if _wbi_keys["img"] and now - _wbi_keys["at"] < 3600:
+        # 密钥轮换较快，30 秒缓存即可（参考 yt-dlp）
+        if _wbi_keys["img"] and now - _wbi_keys["at"] < 30:
             return _wbi_keys["img"], _wbi_keys["sub"]
         nav = json.loads(fetch_text(
             "https://api.bilibili.com/x/web-interface/nav", headers={"Referer": REFERER},
