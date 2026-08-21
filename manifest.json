@@ -1,35 +1,40 @@
 {
-  "repo_version": 2,
+  "repo_version": 3,
   "adapters": [
     {
       "id": "bilibili",
       "file": "site_bilibili.py",
       "version": "1.0.4",
-      "sha256": "b0857e4921c59e27968e7c5ca26301bd23fa9038dcdc1c2c74d65b9cce7698fe"
+      "sha256": "b0857e4921c59e27968e7c5ca26301bd23fa9038dcdc1c2c74d65b9cce7698fe",
+      "changelog": "适配 B 站新版页面，修复多 P 识别"
     },
     {
       "id": "18mh",
       "file": "site_18mh.py",
       "version": "1.0.0",
-      "sha256": "e75725c1a42dee04b22ec02344da8a8533cc5688c3ba452f409fef1953fbba08"
+      "sha256": "e75725c1a42dee04b22ec02344da8a8533cc5688c3ba452f409fef1953fbba08",
+      "changelog": "禁漫天堂专用适配器：列表/搜索页抽卡片，详情页取带鉴权 m3u8，自动收集备选地址"
     },
     {
       "id": "91porna",
       "file": "site_91porna.py",
       "version": "1.0.0",
-      "sha256": "c484f37120be7b5579b14459ae369e49bd181562a87ae6022b7b8df5b9e7a6d8"
+      "sha256": "c484f37120be7b5579b14459ae369e49bd181562a87ae6022b7b8df5b9e7a6d8",
+      "changelog": "91porna 专用适配器：卡片识别 + JS 混淆破解，直取真实 m3u8"
     },
     {
       "id": "generic",
       "file": "site_generic.py",
       "version": "1.0.0",
-      "sha256": "9917d5f845791400a42e38db549cd8df94daf541717e48333b6533278bc55678"
+      "sha256": "9917d5f845791400a42e38db549cd8df94daf541717e48333b6533278bc55678",
+      "changelog": "通用兜底适配器：视频页/列表页启发式识别 + 清晰度标签"
     },
     {
       "id": "rules",
       "file": "rules.json",
       "version": "1.0.0",
-      "sha256": "82bc513e534b781e4be73146d8f45b2409930ef00f4bc015c0e9525d1058b232"
+      "sha256": "82bc513e534b781e4be73146d8f45b2409930ef00f4bc015c0e9525d1058b232",
+      "changelog": "通用适配器的启发式规则（可选覆盖，默认用代码内置值）"
     }
   ]
 }
