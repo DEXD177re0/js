@@ -40,7 +40,7 @@
       "id": "kuaimsp",
       "file": "site_kuaimsp.py",
       "version": "1.0.0",
-      "sha256": "cdb224a60abf0f2af015d16e9dff944ab03f04b1f61de378d7783ce7ff383724",
+      "sha256": "b2b8eff6d626b7e8d56128395a081a84de252d56104c59768fa0b65fbe52cb7c",
       "changelog": "kuaimsp 专用适配器：列表/搜索页抽卡片（自动跳过广告），详情页 __ARCHIVE_PLAYER__ 取 CDN m3u8（AES-128），路径式翻页 /category/cate69/2/"
     }
   ]
