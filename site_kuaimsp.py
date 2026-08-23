@@ -76,6 +76,8 @@ class SiteKuaimsp:
             card.get("title", "") if isinstance(card, dict) else ""
         )
         html = fetch_text(card_url, headers={"Referer": f"https://{HOST}/"})
+        if not title:
+            title = self._page_title(html)
         m = _PLAYER_RE.search(html)
         if not m:
             raise ValueError("详情页未找到 __ARCHIVE_PLAYER__ 播放配置")
@@ -121,6 +123,21 @@ class SiteKuaimsp:
         else:
             path = path + "/" + str(page)
         return urlunparse(parts._replace(path=path + "/"))
+
+    @staticmethod
+    def _page_title(html: str) -> str:
+        """详情页单页解析时补取标题：优先 <h1>，回退 og:title / <title>，去掉站点后缀。"""
+        sel = Selector(text=html)
+        h1 = sel.css("h1::text").get()
+        if h1:
+            title = " ".join(h1.split())
+        else:
+            og = sel.css('meta[property="og:title"]::attr(content)').get()
+            t = sel.css("title::text").get()
+            title = " ".join((og or t or "").split())
+        if title:
+            title = re.sub(r"\s*[-|_—]\s*(快猫视频|kuaimsp|快猫)$", "", title, flags=re.I)
+        return title
 
     @staticmethod
     def _fmt_duration(raw: str) -> str:
