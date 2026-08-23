@@ -2,18 +2,16 @@
 
 链路：视频页/列表页 -> 提取视频卡片（BV 链接）
      -> view API 取 aid/cid（脚本请求拿不到页面播放数据）
-     -> wbi 签名 playurl API -> durl 单文件 mp4（含音视频，未登录最高 360p）
+     -> x/player/playurl -> durl 单文件 mp4（含音视频，未登录最高 360p）
 
 与 generic 的关系：本适配器 match 命中 bilibili 域名时优先使用。
 generic 的 yt-dlp 虽能识别 bilibili，但返回 dash 分离流（音视频分开），
 Android 端无法合并（无声）；本适配器直接取单文件 mp4/flv。
 """
-import hashlib
 import json
 import logging
 import re
-import time
-from urllib.parse import urlencode, urljoin, urlparse
+from urllib.parse import parse_qs, quote, urlencode, urljoin, urlparse
 
 from parsel import Selector
 
@@ -27,16 +25,8 @@ HOST = "bilibili.com"
 UA = DEFAULT_HEADERS.get("User-Agent", "Mozilla/5.0")
 REFERER = "https://www.bilibili.com/"
 
-# wbi 签名：mixin key 打乱表（B 站公开算法）
-_MIXIN_KEY_ENC_TAB = [
-    46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49,
-    33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13, 37, 48, 7, 16, 24, 55, 40,
-    61, 26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11,
-    36, 20, 34, 44, 52,
-]
 _QUALITY_MAP = {16: "360p", 32: "480p", 64: "720p", 80: "1080p", 112: "1080p+", 116: "1080p60"}
 _BV_RE = re.compile(r"/video/(BV[0-9A-Za-z]+)")
-_wbi_keys = {"img": None, "sub": None, "at": 0.0}
 
 
 class SiteBilibili:
@@ -48,6 +38,15 @@ class SiteBilibili:
 
     # ---------------- 列表/搜索/分区页卡片 ----------------
     def parse_cards(self, html: str, base_url: str) -> list:
+        # 搜索页：B 站搜索结果是 JS 客户端渲染，HTML 只有第 1 页 SSR 卡片、
+        # 第 2 页起完全没卡片；直接用官方搜索 API 按页取（每页 20 条）。
+        if "search.bilibili.com" in urlparse(base_url).netloc.lower():
+            try:
+                cards = self._search_cards(base_url)
+                if cards:
+                    return cards
+            except Exception as e:  # noqa: BLE001
+                log.info("bilibili 搜索 API 失败，退回 HTML 解析: %s", e)
         sel = Selector(text=html)
         cards, seen = [], set()
         for a in sel.css('a[href*="/video/BV"]'):
@@ -77,6 +76,56 @@ class SiteBilibili:
             ))
         return cards
 
+    @staticmethod
+    def _search_cards(base_url: str) -> list:
+        """官方搜索 API：/x/web-interface/search/all/v2（无需 wbi 签名）。"""
+        q = parse_qs(urlparse(base_url).query)
+        keyword = (q.get("keyword") or [""])[0]
+        page = 1
+        for key in ("page", "p", "pn"):
+            if q.get(key) and q[key][0].isdigit():
+                page = int(q[key][0])
+                break
+        if not keyword:
+            return []
+        api = ("https://api.bilibili.com/x/web-interface/search/all/v2"
+               "?keyword=%s&page=%d" % (quote(keyword), page))
+        data = json.loads(fetch_text(api, headers={"Referer": REFERER}))
+        cards = []
+        for block in ((data.get("data") or {}).get("result") or []):
+            if block.get("result_type") != "video":
+                continue
+            for v in block.get("data") or []:
+                bvid = (v.get("bvid") or "").strip()
+                if not bvid:
+                    continue
+                title = re.sub(r"<[^>]+>", "", v.get("title") or "").strip()
+                cards.append(VideoCard(
+                    title=title,
+                    url="https://www.bilibili.com/video/" + bvid,
+                    kind="video",
+                    poster=(v.get("pic") or "").strip() or "",
+                    duration=SiteBilibili._fmt_duration(v.get("duration") or ""),
+                    source_page=base_url,
+                ))
+        return cards
+
+    @staticmethod
+    def _fmt_duration(raw: str) -> str:
+        """搜索 API 的 duration 形如 89:0（分钟:秒），转成 H:MM:SS / MM:SS。"""
+        if not raw or ":" not in raw:
+            return raw
+        parts = raw.split(":")
+        try:
+            secs = int(parts[-1]) if len(parts) == 2 else 0
+            mins = int(parts[-2]) if len(parts) >= 2 else int(parts[0])
+        except (TypeError, ValueError):
+            return raw
+        total = mins * 60 + secs
+        h, rem = divmod(total, 3600)
+        m, sec = divmod(rem, 60)
+        return f"{h}:{m:02d}:{sec:02d}" if h else f"{m}:{sec:02d}"
+
     # ---------------- 单页/视频页快速解析 ----------------
     def single_source(self, url: str):
         try:
@@ -104,15 +153,12 @@ class SiteBilibili:
         cid = vd.get("cid")
         if not cid:
             return None
-        aid = vd.get("aid")
         title = title or vd.get("title") or ""
 
-        img_key, sub_key = self._wbi_keys()
-        params = _enc_wbi(
-            {"bvid": bvid, "cid": cid, "qn": 32, "fnval": 0, "fnver": 0, "fourk": 1},
-            img_key, sub_key,
-        )
-        api = "https://api.bilibili.com/x/player/wbi/playurl?" + urlencode(params)
+        # B 站 wbi 版 playurl 对脚本请求返回 v_voucher（空 data）；
+        # 用老的 x/player/playurl 接口即可直接拿到单文件 mp4（匿名最高 360p）。
+        params = {"bvid": bvid, "cid": cid, "qn": 32, "fnval": 0, "fnver": 0, "fourk": 1}
+        api = "https://api.bilibili.com/x/player/playurl?" + urlencode(params)
         result = json.loads(fetch_text(api, headers={"Referer": REFERER}))
         data = result.get("data") or {}
         durl = data.get("durl") or []
@@ -134,37 +180,3 @@ class SiteBilibili:
             note=note,
             quality=_QUALITY_MAP.get(qn, f"{qn}p"),
         )
-
-    @staticmethod
-    def _wbi_keys():
-        """获取 wbi 签名密钥（nav 接口，缓存 1 小时）。"""
-        now = time.time()
-        # 密钥轮换较快，30 秒缓存即可（参考 yt-dlp）
-        if _wbi_keys["img"] and now - _wbi_keys["at"] < 30:
-            return _wbi_keys["img"], _wbi_keys["sub"]
-        nav = json.loads(fetch_text(
-            "https://api.bilibili.com/x/web-interface/nav", headers={"Referer": REFERER},
-        ))
-        wbi = ((nav.get("data") or {}).get("wbi_img") or {})
-        img_url = wbi.get("img_url") or ""
-        sub_url = wbi.get("sub_url") or ""
-        if not img_url or not sub_url:
-            raise RuntimeError("bilibili nav 未返回 wbi 密钥")
-        img_key = img_url.rsplit("/", 1)[1].split(".")[0]
-        sub_key = sub_url.rsplit("/", 1)[1].split(".")[0]
-        _wbi_keys["img"], _wbi_keys["sub"], _wbi_keys["at"] = img_key, sub_key, now
-        return img_key, sub_key
-
-
-def _mixin_key(orig: str) -> str:
-    return "".join(orig[i] for i in _MIXIN_KEY_ENC_TAB)[:32]
-
-
-def _enc_wbi(params: dict, img_key: str, sub_key: str) -> dict:
-    """wbi 签名：wts 时间戳 + w_rid（mixin key md5）。"""
-    mixin = _mixin_key(img_key + sub_key)
-    params["wts"] = int(time.time())
-    ordered = dict(sorted(params.items()))
-    query = urlencode(ordered)
-    params["w_rid"] = hashlib.md5((query + mixin).encode()).hexdigest()
-    return params

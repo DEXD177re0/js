@@ -7,7 +7,7 @@
 """
 import logging
 import re
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urlunparse
 
 from parsel import Selector
 
@@ -71,6 +71,19 @@ class Site18mh:
         except Exception as e:
             log.info("18mh single_source 失败 %s: %s", url, e)
             return None
+
+    # ---------------- 翻页：路径式 /page/N ----------------
+    @staticmethod
+    def page_url(url: str, page: int) -> str:
+        """18mh 翻页是路径式 /mv/search/xxx/page/2；已带页码则原位替换。"""
+        parts = urlparse(url)
+        path = parts.path.rstrip("/")
+        m = re.search(r"/page/\d+$", path, re.I)
+        if m:
+            path = path[: m.start()] + f"/page/{page}"
+        else:
+            path = path + f"/page/{page}"
+        return urlunparse(parts._replace(path=path))
 
     # ---------------- 详情页 -> m3u8 ----------------
     def resolve_video(self, card) -> VideoSource:

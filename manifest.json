@@ -1,26 +1,26 @@
 {
-  "repo_version": 4,
+  "repo_version": 5,
   "adapters": [
     {
       "id": "bilibili",
       "file": "site_bilibili.py",
-      "version": "1.0.4",
-      "sha256": "b0857e4921c59e27968e7c5ca26301bd23fa9038dcdc1c2c74d65b9cce7698fe",
-      "changelog": "适配 B 站新版页面，修复多 P 识别"
+      "version": "1.0.5",
+      "sha256": "75c1f2eb3e40018b3361b1523de77de8c2f2aad3b80a69233e3edbbcb770dd3e",
+      "changelog": "修复 playurl 反爬（v_voucher 空数据）改用非 wbi 接口；搜索页改用官方搜索 API 支持多页"
     },
     {
       "id": "18mh",
       "file": "site_18mh.py",
-      "version": "1.0.0",
-      "sha256": "e75725c1a42dee04b22ec02344da8a8533cc5688c3ba452f409fef1953fbba08",
-      "changelog": "禁漫天堂专用适配器：列表/搜索页抽卡片，详情页取带鉴权 m3u8，自动收集备选地址"
+      "version": "1.0.1",
+      "sha256": "dadb1f8ce90e14c96c2d72cd92708e1fa194b22386b5a0fe4de3493c6f6e81ae",
+      "changelog": "翻页改为路径式 /page/N，从第 2 页开始分析也能正确抓取"
     },
     {
       "id": "91porna",
       "file": "site_91porna.py",
-      "version": "1.0.0",
-      "sha256": "c484f37120be7b5579b14459ae369e49bd181562a87ae6022b7b8df5b9e7a6d8",
-      "changelog": "91porna 专用适配器：卡片识别 + JS 混淆破解，直取真实 m3u8"
+      "version": "1.0.1",
+      "sha256": "f02f81dc77dd44f31408b8bdc86bd973d9b98c1e9f2fddcc6177ec8f5633059d",
+      "changelog": "修复单页分析：单页模式直接解析当前视频，不再返回相关视频列表"
     },
     {
       "id": "generic",

@@ -4,6 +4,7 @@
      -> 详情页 og:video -> embed 播放页
      -> 混淆 JS 拼出 embed_play.js -> packer 解码 -> 真实 m3u8。
 """
+import logging
 import re
 import time
 from urllib.parse import urljoin, urlparse
@@ -14,6 +15,8 @@ from app.config import DEFAULT_HEADERS
 from app.core.decode import decode_packed
 from app.core.http import fetch_text
 from app.models import VideoCard, VideoSource
+
+log = logging.getLogger(__name__)
 
 HOST = "91porna.com"
 _QUALITY_RE = re.compile(r"(2160|1440|1080|720|480|360|240)p", re.I)
@@ -49,10 +52,18 @@ class Site91porna:
             )
         return cards
 
+    # ---------------- 单页/详情页快速解析 ----------------
+    def single_source(self, url: str):
+        try:
+            return self.resolve_video(VideoCard(title="", url=url, kind="video"))
+        except Exception as e:  # noqa: BLE001
+            log.info("91porna single_source 失败 %s: %s", url, e)
+            return None
+
     # ---------------- 详情页 -> m3u8 ----------------
     def resolve_video(self, card) -> VideoSource:
         card_url = card.url if hasattr(card, "url") else card["url"]
-        title = getattr(card, "title", None) or card.get("title", "")
+        title = getattr(card, "title", None) or (card.get("title", "") if isinstance(card, dict) else "")
         origin = f"{urlparse(card_url).scheme}://{urlparse(card_url).netloc}/"
         html = fetch_text(card_url, headers={"Referer": origin})
         # og:video 可能先出现 text/html 类型，取第一个 http(s) 的 embed 地址
